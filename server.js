@@ -37,22 +37,111 @@ app.get ('/produk', (req, res) => {
     });
 });
 
-app.post ('/produk', (req, res) => {
+//--------------- Menambahkan Produk --------------- >>>>
+
+app.post('/produk', (req, res) => {
+    const { judul, deskripsi, harga, id_kategori } = req.body;
+    
+    if (!judul || !harga) {
+        return res.status(400).json({
+            message: 'Judul dan harga wajib diisi'
+        });
+    }
+
+    if (!deskripsi) {
+        return res.status(400).json({
+            message: 'Deskripsi wajib diisi'
+        });
+    }
+
+    const sql = `
+        INSERT INTO produk
+        (judul, deskripsi, harga, id_kategori, tgl_input)
+        VALUES (?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+        sql,
+        [judul, deskripsi, harga, id_kategori],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({
+                    error: err.sqlMessage
+                });
+            }
+
+            res.status(201).json({
+                message: 'Produk berhasil ditambahkan!',
+                id_produk: results.insertId
+            });
+        }
+    );
+});
+
+//---------------- MengUpdate Produk --------------- >>>>
+app.put('/produk/:id_produk', (req, res) => {
+    const { id_produk } = req.params;
     const { judul, deskripsi, harga, id_kategori } = req.body;
 
     if (!judul || !harga) {
-        return res.status(400).json({ message: 'Judul dan harga wajib diisi' });
+        return res.status(400).json({
+            message: 'Judul dan harga wajib diisi'
+        });
     }
 
-    const sql = 'INSERT INTO produk (produk, deskripsi, harga, id_kategori, tgl_input) VALUES (?, ?, ?, ?, NOW())';
-    db.query(sql, [judul, deskripsi, harga, id_kategori], (err, results) => {
-        if (err) return res.status(500).json({ error: err.sqlMessage });
-        req.json({
-            message: 'Produk berhasil ditambahkan!',
-            id_produk: results.insertId
+    const sql = `
+        UPDATE produk
+        SET judul=?, deskripsi=?, harga=?, id_kategori=?
+        WHERE id_produk=?
+    `;
+
+    db.query(
+        sql,
+        [judul, deskripsi, harga, id_kategori, id_produk],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({
+                    error: err.sqlMessage
+                });
+            }
+
+            if (results.affectedRows === 0) {
+                return res.status(404).json({
+                    message: 'Produk tidak ditemukan'
+                });
+            }
+
+            res.json({
+                message: 'Produk berhasil diupdate!'
+            });
+        }
+    );
+});
+
+//---------------- Menghapus Produk --------------- >>>>
+app.delete('/produk/:id_produk', (req, res) => {
+    const { id_produk } = req.params;
+
+    const sql = 'DELETE FROM produk WHERE id_produk = ?';
+
+    db.query(sql, [id_produk], (err, results) => {
+        if (err) {
+            return res.status(500).json({
+                error: err.sqlMessage
+            });
+        }
+
+        if (results.affectedRows === 0) {
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            });
+        }
+
+        res.json({
+            message: 'Produk Berhasil Dihapus!'
         });
     });
-})
+});
 
 // --------------- Menampilkan Kategori --------------- >>>>
 app.get ('/kategori', (req, res) => {
